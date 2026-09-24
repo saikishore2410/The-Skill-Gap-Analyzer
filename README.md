@@ -15,10 +15,8 @@ A client-side resume and job-description skill-gap analyzer.
 
 - HTML5
 - JavaScript
-- Tailwind CSS
 - Vite
-
-The repository also contains an unused React/TypeScript scaffold from the original project template; the production application is the Vite-served index.html.
+- Tailwind CSS via the existing browser-delivered UI
 
 ## Local development
 
@@ -29,20 +27,22 @@ npm run dev
 
 Open the Vite URL shown in the terminal.
 
-## Production build
+## Validation and production build
 
 ```bash
+npm install
+npm test
 npm run lint
 npm run build
 npm run preview
 ```
 
-The production files are generated in dist/.
+The production files are generated in `dist/`.
 
 ## Deployment
 
-The repository includes GitHub Actions workflows for validation and GitHub Pages deployment. The deployment workflow publishes the Vite dist/ artifact when GitHub Pages is enabled for the repository.
+GitHub Actions validates the application on pushes and pull requests. A separate GitHub Pages workflow builds and deploys the `dist/` artifact on pushes to `main` when GitHub Pages is configured to use GitHub Actions.
 
 ## Security note
 
-Do not commit real API keys or secrets. The current production UI is client-side and does not require a server secret for its core keyword-analysis functionality.
+Do not commit API keys or other secrets. The current production UI is client-side and does not require a server secret for its core keyword-analysis functionality.
