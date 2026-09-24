@@ -10,6 +10,7 @@ const required = [
   'id="btnAnalyze"',
   'auditResumeMatch',
   '<link rel="stylesheet" href="./src/styles.css">',
+  '@import "tailwindcss";',
   '</html>',
 ];
 
@@ -19,7 +20,7 @@ for (const marker of required) {
   }
 }
 
-if (html.includes('https://cdn.tailwindcss.com')) {
+if (html.includes('https://cdn.tailwindcss.com') || html.includes('tailwind.config')) {
   throw new Error('Production HTML must not depend on the Tailwind CDN.');
 }
 
