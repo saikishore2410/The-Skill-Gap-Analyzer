@@ -1,43 +1,48 @@
-# 🎯 The Skill-Gap Analyzer & AI Career Coach
+# The Skill-Gap Analyzer
 
-A premium, single-file, highly responsive web application designed to help job seekers instantly audit their resumes against any target job description. The application computes keyword matches entirely client-side, visualizes missing skill sets, and integrates an on-demand **AI Career Coach** powered directly by the **Google Gemini API**.
+A client-side resume and job-description skill-gap analyzer.
 
----
+## What it does
 
-## ✨ Features
+- Compares resume text with a target job description.
+- Extracts and matches technical/professional skills.
+- Calculates a match score.
+- Highlights critical, recommended, and matched skills.
+- Generates tailored resume bullet suggestions.
+- Runs entirely in the browser; resume/job text is not sent to a backend by the current implementation.
 
-* **Dual-Column Context Input:** Easily paste your raw resume text side-by-side with the target job description.
-* **Instant Match Engine:** Intuitively filters out common language stop-words to parse, isolate, and cross-reference core technical frameworks, methodologies, and tools.
-* **Dynamic Visual Dashboard:** Features a polished, responsive SVG Match Score ring along with color-coded badges classifying *Critical Missing Skills* (Ruby Red) and *Recommended Skills* (Deep Amber).
-* **AI Bullet Point Generator:** Outputs three metric-driven, actionable resume bullets tailored specifically to fill the identified gaps.
-* **Integrated Gemini Chatbot:** Features an in-browser AI Career Coach that understands your specific gap analysis. Ask it to draft cover letters, rewrite summaries, or conduct practice interview questions.
-* **Private & Secure:** Your data is kept safe. The system saves your Google Gemini API key inside your browser's local storage (`localStorage`)—no external servers or backend databases required.
-* **100% Fluidly Responsive:** Uses advanced Tailwind CSS layouts that transition seamlessly from multi-panel desktop workflows to stacked vertical layouts on tablets and mobile devices.
+## Tech stack
 
----
+- HTML5
+- JavaScript
+- Tailwind CSS
+- Vite
 
-## 🛠️ Tech Stack & Architecture
+The repository also contains an unused React/TypeScript scaffold from the original project template; the production application is the Vite-served index.html.
 
-* **Frontend Framework:** Vanilla HTML5 & Modern ES6 JavaScript.
-* **Styling Layer:** Tailwind CSS (via official CDN) utilizing micro-interactions, responsive grids, and clean glassmorphic components.
-* **AI Model Engine:** `@google/generative-ai` library running the high-speed `gemini-2.5-flash` model directly inside the client browser.
+## Local development
 
----
+```bash
+npm install
+npm run dev
+```
 
-## 🚀 Quick Start / Local Installation
+Open the Vite URL shown in the terminal.
 
-Because this project is built entirely on a serverless, single-file schema, getting it running locally takes less than 30 seconds:
+## Production build
 
-1. **Clone or Download the Repository:**
-   ```bash
-   git clone https://github.com
-   cd skill-gap-analyzer
-   ```
+```bash
+npm run lint
+npm run build
+npm run preview
+```
 
-2. **Launch the Application:**
-   Simply open the `index.html` (or `analyzer.html`) file directly inside any modern web browser (Chrome, Safari, Firefox, Edge). No `npm install`, node modules, or local servers required!
+The production files are generated in dist/.
 
-3. **Configure Your Engine:**
-   * Go to the [Google AI Studio Console](https://google.com) to claim a free developer API key.
-   * Paste your key into the collapsible security settings bar at the top of the app and click **Save Key**.
-   * Fill out the inputs, hit **Analyze Match**, and start vibe-coding your way to a stronger resume!
+## Deployment
+
+The repository includes GitHub Actions workflows for validation and GitHub Pages deployment. The deployment workflow publishes the Vite dist/ artifact when GitHub Pages is enabled for the repository.
+
+## Security note
+
+Do not commit real API keys or secrets. The current production UI is client-side and does not require a server secret for its core keyword-analysis functionality.
