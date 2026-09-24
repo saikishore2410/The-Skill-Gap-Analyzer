@@ -1,0 +1,1309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Skill-Gap Analyzer</title>
+  <meta name="description" content="Audit your resume against job descriptions with intelligent keyword gap analysis, match scoring, and tailored bullet point suggestions." />
+  <meta property="og:title" content="The Skill-Gap Analyzer" />
+  <meta property="og:description" content="Audit your resume against job descriptions with intelligent keyword gap analysis, match scoring, and tailored bullet point suggestions." />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Official Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+            }
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.35s ease-out forwards',
+            'slide-up': 'slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+            'pulse-subtle': 'pulseSubtle 2s infinite ease-in-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: '0' },
+              '100%': { opacity: '1' },
+            },
+            slideUp: {
+              '0%': { opacity: '0', transform: 'translateY(16px)' },
+              '100%': { opacity: '1', transform: 'translateY(0)' },
+            },
+            pulseSubtle: {
+              '0%, 100%': { opacity: '1' },
+              '50%': { opacity: '0.75' },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @layer utilities {
+      /* Custom circular gauge progress transition */
+      .gauge-circle {
+        transition: stroke-dashoffset 1.2s cubic-bezier(0.34, 1.56, 0.64, 1), stroke 0.6s ease;
+      }
+    }
+    /* Subtle custom scrollbar */
+    textarea::-webkit-scrollbar, div::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    textarea::-webkit-scrollbar-track, div::-webkit-scrollbar-track {
+      background: #f1f5f9;
+      border-radius: 4px;
+    }
+    textarea::-webkit-scrollbar-thumb, div::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    textarea::-webkit-scrollbar-thumb:hover, div::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col font-sans selection:bg-indigo-100 selection:text-indigo-900">
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <!-- Navigation / Header -->
+  <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-lg font-bold text-slate-900 tracking-tight">The Skill-Gap Analyzer</h1>
+            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">
+              Pro Prototype
+            </span>
+          </div>
+          <p class="text-xs text-slate-500 hidden sm:block">Automated resume vs. job description alignment &amp; keyword audit engine</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div class="hidden md:flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200 text-xs text-slate-600 font-medium">
+          <span class="px-2 text-slate-500">Sample Roles:</span>
+          <button id="btnSampleDev" type="button" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded shadow-xs border border-slate-200 transition-all text-xs font-medium cursor-pointer">
+            Full-Stack Dev
+          </button>
+          <button id="btnSampleCloud" type="button" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded shadow-xs border border-slate-200 transition-all text-xs font-medium cursor-pointer">
+            DevOps & Cloud
+          </button>
+          <button id="btnSampleData" type="button" class="px-2.5 py-1 bg-white hover:bg-slate-50 text-slate-700 rounded shadow-xs border border-slate-200 transition-all text-xs font-medium cursor-pointer">
+            Data & AI
+          </button>
+        </div>
+        <button id="btnResetAll" type="button" title="Reset all inputs" class="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Mobile Preset Bar (Small screens) -->
+  <div class="md:hidden bg-slate-100 border-b border-slate-200 px-4 py-2 flex items-center justify-between text-xs">
+    <span class="text-slate-500 font-medium">Load sample:</span>
+    <div class="flex gap-1">
+      <button id="btnSampleDevMobile" class="px-2 py-1 bg-white rounded border border-slate-200 text-slate-700">Full-Stack</button>
+      <button id="btnSampleCloudMobile" class="px-2 py-1 bg-white rounded border border-slate-200 text-slate-700">Cloud</button>
+      <button id="btnSampleDataMobile" class="px-2 py-1 bg-white rounded border border-slate-200 text-slate-700">Data/AI</button>
+    </div>
+  </div>
+
+  <!-- Main Content Layout -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- ========================================== -->
+      <!-- LEFT COLUMN: INPUTS (lg:col-span-5)        -->
+      <!-- ========================================== -->
+      <section class="lg:col-span-5 flex flex-col gap-5">
+        
+        <!-- Resume Input Card -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-400">
+          <div class="px-4 py-3 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">1</span>
+              <label for="resumeInput" class="text-sm font-semibold text-slate-800">Resume Content</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="resumeWordCount" class="text-xs text-slate-400">0 words</span>
+              <button id="btnClearResume" type="button" class="text-xs text-slate-400 hover:text-slate-600 transition-colors hidden cursor-pointer">Clear</button>
+            </div>
+          </div>
+          <div class="p-3">
+            <textarea 
+              id="resumeInput" 
+              rows="9" 
+              placeholder="Paste your resume text here (experience summary, skills, work accomplishments, technical toolkit)..."
+              class="w-full text-sm text-slate-700 placeholder-slate-400 border-0 focus:outline-hidden focus:ring-0 resize-y leading-relaxed font-mono"
+            ></textarea>
+          </div>
+          <div class="px-4 py-2 bg-slate-50/50 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
+            <span>Tip: Include bullet points &amp; technical tools for higher accuracy.</span>
+            <span id="resumeCharCount" class="text-slate-400">0 chars</span>
+          </div>
+        </div>
+
+        <!-- Job Description Input Card -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden transition-all focus-within:ring-2 focus-within:ring-indigo-500/20 focus-within:border-indigo-400">
+          <div class="px-4 py-3 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold">2</span>
+              <label for="jobInput" class="text-sm font-semibold text-slate-800">Job Description (Target Role)</label>
+            </div>
+            <div class="flex items-center gap-2">
+              <span id="jobWordCount" class="text-xs text-slate-400">0 words</span>
+              <button id="btnClearJob" type="button" class="text-xs text-slate-400 hover:text-slate-600 transition-colors hidden cursor-pointer">Clear</button>
+            </div>
+          </div>
+          <div class="p-3">
+            <textarea 
+              id="jobInput" 
+              rows="9" 
+              placeholder="Paste the target job description, responsibilities, required qualifications, and technical stack requirements here..."
+              class="w-full text-sm text-slate-700 placeholder-slate-400 border-0 focus:outline-hidden focus:ring-0 resize-y leading-relaxed font-mono"
+            ></textarea>
+          </div>
+          <div class="px-4 py-2 bg-slate-50/50 border-t border-slate-100 text-[11px] text-slate-500 flex items-center justify-between">
+            <span>Our AI parser scans requirements, qualifications &amp; competencies.</span>
+            <span id="jobCharCount" class="text-slate-400">0 chars</span>
+          </div>
+        </div>
+
+        <!-- Analyze Button Container -->
+        <div class="flex flex-col gap-2">
+          <button 
+            id="btnAnalyze" 
+            type="button" 
+            class="w-full group relative inline-flex items-center justify-center px-6 py-3.5 text-base font-semibold text-white bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 rounded-xl shadow-md hover:shadow-lg shadow-indigo-500/25 transition-all duration-200 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed transform active:scale-[0.99]"
+          >
+            <!-- Normal Button State -->
+            <span id="btnAnalyzeLabel" class="flex items-center gap-2.5">
+              <svg class="w-5 h-5 text-indigo-200 group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+              <span>Analyze Match &amp; Audit Gaps</span>
+            </span>
+
+            <!-- Loading Spinner State (Hidden by default) -->
+            <span id="btnAnalyzeSpinner" class="hidden flex items-center gap-2.5">
+              <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span>Parsing text &amp; cross-referencing keywords...</span>
+            </span>
+          </button>
+
+          <!-- Input Validation Hint / Helper -->
+          <div id="inputValidationAlert" class="hidden text-xs text-rose-600 bg-rose-50 border border-rose-200 rounded-lg p-2.5 text-center font-medium animate-fade-in">
+            Please paste both your Resume text and Job Description to run the gap analysis.
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ========================================== -->
+      <!-- RIGHT COLUMN: DASHBOARD (lg:col-span-7)     -->
+      <!-- ========================================== -->
+      <section class="lg:col-span-7 flex flex-col gap-5">
+
+        <!-- 1. EMPTY / PLACEHOLDER STATE -->
+        <div id="emptyStatePanel" class="bg-white rounded-2xl border border-dashed border-slate-300 p-8 sm:p-12 text-center flex flex-col items-center justify-center min-h-[480px] shadow-xs">
+          <div class="w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 mb-4 shadow-inner">
+            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.8">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+          </div>
+          <h3 class="text-lg font-bold text-slate-800 mb-1">Awaiting Comparison Inputs</h3>
+          <p class="text-sm text-slate-500 max-w-md mx-auto mb-6 leading-relaxed">
+            Paste your resume text and target job description on the left, then click <strong class="text-indigo-600 font-semibold">"Analyze Match"</strong> to reveal your keyword coverage, critical skill deficits, and tailored bullet enhancements.
+          </p>
+          <div class="flex flex-col sm:flex-row items-center gap-3">
+            <button id="btnEmptySampleDev" type="button" class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Try Demo: Full-Stack Role</span>
+            </button>
+            <span class="text-xs text-slate-400">or start pasting your own</span>
+          </div>
+        </div>
+
+        <!-- 2. ACTIVE DASHBOARD RESULTS PANEL (Hidden initially) -->
+        <div id="resultsPanel" class="hidden flex-col gap-5 animate-slide-up">
+
+          <!-- Card 1: Executive Match Summary & Circular Gauge -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs relative overflow-hidden">
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-6">
+              
+              <!-- Circular Progress Gauge -->
+              <div class="flex items-center gap-5">
+                <div class="relative w-32 h-32 flex items-center justify-center shrink-0">
+                  <svg class="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
+                    <!-- Background Circle Track -->
+                    <circle 
+                      cx="60" 
+                      cy="60" 
+                      r="48" 
+                      fill="transparent" 
+                      stroke="#f1f5f9" 
+                      stroke-width="10" 
+                    />
+                    <!-- Dynamic Progress Circle -->
+                    <circle 
+                      id="gaugeCircle" 
+                      class="gauge-circle" 
+                      cx="60" 
+                      cy="60" 
+                      r="48" 
+                      fill="transparent" 
+                      stroke="#4f46e5" 
+                      stroke-width="10" 
+                      stroke-linecap="round" 
+                      stroke-dasharray="301.59" 
+                      stroke-dashoffset="301.59" 
+                    />
+                  </svg>
+                  <div class="absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span id="scorePercentText" class="text-3xl font-extrabold text-slate-900 tracking-tight">0%</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Match Score</span>
+                  </div>
+                </div>
+
+                <!-- Text Breakdown & Fit Verdict -->
+                <div>
+                  <div class="flex items-center gap-2 mb-1">
+                    <span id="verdictBadge" class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                      Moderate Fit
+                    </span>
+                    <span id="detectedKeywordsCountBadge" class="text-xs text-slate-500 font-medium">32 keywords detected</span>
+                  </div>
+                  <h2 id="verdictTitle" class="text-base sm:text-lg font-bold text-slate-900 leading-snug">Strong Candidate with Key Gaps</h2>
+                  <p id="verdictDescription" class="text-xs text-slate-500 mt-1 max-w-sm leading-relaxed">
+                    Your background shares foundational overlap, but missing critical requirements could trigger ATS filtering.
+                  </p>
+                </div>
+              </div>
+
+              <!-- Quick Action: Export / Copy Report -->
+              <div class="sm:self-start w-full sm:w-auto flex sm:flex-col justify-end gap-2 border-t sm:border-t-0 pt-3 sm:pt-0 border-slate-100">
+                <button id="btnCopyReport" type="button" class="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg border border-slate-200 transition-colors cursor-pointer">
+                  <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                  </svg>
+                  <span>Copy Audit Summary</span>
+                </button>
+              </div>
+
+            </div>
+
+            <!-- 3 Mini Stats Bar -->
+            <div class="grid grid-cols-3 gap-3 mt-6 pt-5 border-t border-slate-100">
+              <div class="bg-slate-50 rounded-xl p-3 border border-slate-100">
+                <div class="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span>Matched Skills</span>
+                </div>
+                <div id="statMatchedCount" class="text-xl font-bold text-slate-800 mt-0.5">0</div>
+                <div class="text-[10px] text-slate-400">Found in resume</div>
+              </div>
+
+              <div class="bg-rose-50/60 rounded-xl p-3 border border-rose-100">
+                <div class="text-[11px] font-semibold text-rose-700 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                  <span>Critical Gaps</span>
+                </div>
+                <div id="statCriticalCount" class="text-xl font-bold text-rose-700 mt-0.5">0</div>
+                <div class="text-[10px] text-rose-600/70">High-priority JD terms</div>
+              </div>
+
+              <div class="bg-amber-50/60 rounded-xl p-3 border border-amber-100">
+                <div class="text-[11px] font-semibold text-amber-700 flex items-center gap-1">
+                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                  <span>Recommended</span>
+                </div>
+                <div id="statRecommendedCount" class="text-xl font-bold text-amber-700 mt-0.5">0</div>
+                <div class="text-[10px] text-amber-600/70">Secondary &amp; tools</div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Card 2: Visual Keyword Badges & Skill Gap Matrix -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 class="text-sm font-bold text-slate-900 tracking-tight flex items-center gap-2">
+                  <span>Skill Coverage &amp; Gap Matrix</span>
+                </h3>
+                <p class="text-xs text-slate-500">Grouped by urgency to maximize ATS screening success</p>
+              </div>
+
+              <!-- Keyword Filter Tabs -->
+              <div class="inline-flex p-1 bg-slate-100 rounded-lg text-xs font-semibold text-slate-600">
+                <button id="tabFilterAll" type="button" class="px-2.5 py-1 rounded-md bg-white shadow-xs text-indigo-700 transition-all cursor-pointer">
+                  All (<span id="countTabAll">0</span>)
+                </button>
+                <button id="tabFilterCritical" type="button" class="px-2.5 py-1 rounded-md hover:text-slate-900 transition-all cursor-pointer">
+                  Critical (<span id="countTabCritical">0</span>)
+                </button>
+                <button id="tabFilterRecommended" type="button" class="px-2.5 py-1 rounded-md hover:text-slate-900 transition-all cursor-pointer">
+                  Recommended (<span id="countTabRecommended">0</span>)
+                </button>
+                <button id="tabFilterMatched" type="button" class="px-2.5 py-1 rounded-md hover:text-slate-900 transition-all cursor-pointer">
+                  Matched (<span id="countTabMatched">0</span>)
+                </button>
+              </div>
+            </div>
+
+            <!-- Category 1: Critical Missing Skills (Red/Rose) -->
+            <div id="sectionCriticalSkills" class="mb-5">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-rose-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-rose-500"></span>
+                  Critical Missing Skills (High Frequency in JD)
+                </span>
+                <span id="criticalBadgeSubtext" class="text-[11px] text-rose-600 font-medium">Add to your core toolkit</span>
+              </div>
+              <div id="criticalSkillsContainer" class="flex flex-wrap gap-2 min-h-[36px]">
+                <!-- Injected Badges -->
+              </div>
+            </div>
+
+            <!-- Category 2: Recommended Skills (Yellow/Amber) -->
+            <div id="sectionRecommendedSkills" class="mb-5">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-amber-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                  Recommended Skills (Secondary &amp; Frameworks)
+                </span>
+                <span id="recommendedBadgeSubtext" class="text-[11px] text-amber-600 font-medium">Strengthens profile match</span>
+              </div>
+              <div id="recommendedSkillsContainer" class="flex flex-wrap gap-2 min-h-[36px]">
+                <!-- Injected Badges -->
+              </div>
+            </div>
+
+            <!-- Category 3: Confirmed Matched Skills (Emerald/Green) -->
+            <div id="sectionMatchedSkills" class="pt-4 border-t border-slate-100">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-emerald-700 uppercase tracking-wider flex items-center gap-1.5">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  Matched Skills (Already in your Resume)
+                </span>
+                <span class="text-[11px] text-emerald-600 font-medium">Validated match</span>
+              </div>
+              <div id="matchedSkillsContainer" class="flex flex-wrap gap-2 min-h-[36px]">
+                <!-- Injected Badges -->
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Card 3: Dynamic Resume Bullet Point Suggestions -->
+          <div class="bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-600 text-white text-[11px] font-bold">★</span>
+                  <h3 class="text-sm font-bold text-slate-900 tracking-tight">AI Bullet Point Recommendations</h3>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">High-impact, metric-driven statements engineered to incorporate your missing skills</p>
+              </div>
+
+              <button id="btnRegenerateBullets" type="button" class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg border border-indigo-200 transition-colors cursor-pointer shrink-0">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                </svg>
+                <span>Regenerate Variations</span>
+              </button>
+            </div>
+
+            <!-- Bullets Container -->
+            <div id="bulletsContainer" class="space-y-3">
+              <!-- Dynamically populated bullets -->
+            </div>
+            
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
+              <span class="flex items-center gap-1">
+                <svg class="w-3.5 h-3.5 text-indigo-500" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+                Click any bullet's copy button to paste directly into your resume editor.
+              </span>
+              <button id="btnCopyAllBullets" type="button" class="text-xs font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer">
+                Copy All 3 Bullets
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </section>
+
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="bg-white border-t border-slate-200 mt-auto py-4 text-center text-xs text-slate-500">
+    <div class="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <span class="font-semibold text-slate-700">The Skill-Gap Analyzer</span>
+        <span>&bull;</span>
+        <span>Client-side parsing &amp; simulation</span>
+      </div>
+      <div class="text-slate-400">
+        Private &amp; local processing &mdash; your resume text never leaves your browser.
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================== -->
+  <!-- JAVASCRIPT LOGIC ENGINE                    -->
+  <!-- ========================================== -->
+  <script>
+    /**
+     * Skill-Gap Analyzer Logic Engine
+     * Self-contained client-side keyword extraction, cross-referencing,
+     * scoring algorithm, and smart bullet synthesis.
+     */
+
+    // --- CURATED KNOWLEDGE BASE FOR TECHNICAL & PROFESSIONAL SKILLS ---
+    const KNOWN_SKILLS_DICTIONARY = [
+      // Languages
+      "JavaScript", "TypeScript", "Python", "Java", "Go", "Golang", "C++", "C#", "Rust", "Ruby", "PHP", "Swift", "Kotlin", "SQL", "HTML5", "CSS3", "Bash", "Shell",
+      // Frontend & Mobile
+      "React", "React.js", "Next.js", "Vue", "Vue.js", "Angular", "Svelte", "Redux", "Tailwind CSS", "Tailwind", "CSS", "HTML", "Webpack", "Vite", "GraphQL", "REST APIs", "RESTful", "React Native", "Flutter", "Responsive Design",
+      // Backend & Systems
+      "Node.js", "Express", "Express.js", "NestJS", "FastAPI", "Django", "Flask", "Spring Boot", "Ruby on Rails", "Microservices", "Serverless", "WebSockets", "gRPC", "API Design",
+      // Databases & Storage
+      "PostgreSQL", "MySQL", "MongoDB", "Redis", "Elasticsearch", "DynamoDB", "Cassandra", "Prisma", "TypeORM", "NoSQL", "Firebase", "Firestore", "SQLite",
+      // Cloud, DevOps & Infrastructure
+      "AWS", "Amazon Web Services", "Azure", "GCP", "Google Cloud", "Docker", "Kubernetes", "K8s", "CI/CD", "Terraform", "GitHub Actions", "Jenkins", "Linux", "Ansible", "Helm", "Prometheus", "Grafana", "CloudFormation", "Nginx",
+      // Data, AI & Analytics
+      "Machine Learning", "Deep Learning", "PyTorch", "TensorFlow", "Pandas", "NumPy", "Scikit-Learn", "LLM", "RAG", "Generative AI", "NLP", "Kafka", "Apache Spark", "Airflow", "ETL", "Data Pipelines", "BigQuery", "Snowflake",
+      // Architecture, Testing & Methodologies
+      "System Design", "Agile", "Scrum", "TDD", "Test-Driven Development", "Unit Testing", "Integration Testing", "Jest", "Cypress", "Playwright", "Git", "GitHub", "GitLab", "Clean Architecture", "Domain-Driven Design", "Performance Optimization", "Scalability", "Security", "OAuth", "OAuth 2.0", "JWT",
+      // Leadership & Management
+      "Code Reviews", "Cross-functional", "Mentorship", "Technical Leadership", "Sprint Planning", "Stakeholder Management", "Incident Response", "Documentation"
+    ];
+
+    // Common English Stop-words
+    const STOP_WORDS = new Set([
+      "a", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "aren't",
+      "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by",
+      "can", "can't", "cannot", "could", "couldn't", "did", "didn't", "do", "does", "doesn't", "doing",
+      "don't", "down", "during", "each", "few", "for", "from", "further", "had", "hadn't", "has", "hasn't",
+      "have", "haven't", "having", "he", "he'd", "he'll", "he's", "her", "here", "here's", "hers", "herself",
+      "him", "himself", "his", "how", "how's", "i", "i'd", "i'll", "i'm", "i've", "if", "in", "into", "is",
+      "isn't", "it", "it's", "its", "itself", "let's", "me", "more", "most", "mustn't", "my", "myself", "no",
+      "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves",
+      "out", "over", "own", "same", "shan't", "she", "she'd", "she'll", "she's", "should", "shouldn't", "so",
+      "some", "such", "than", "that", "that's", "the", "their", "theirs", "them", "themselves", "then",
+      "there", "there's", "these", "they", "they'd", "they'll", "they're", "they've", "this", "those",
+      "through", "to", "too", "under", "until", "up", "very", "was", "wasn't", "we", "we'd", "we'll", "we're",
+      "we've", "were", "weren't", "what", "what's", "when", "when's", "where", "where's", "which", "while",
+      "who", "who's", "whom", "why", "why's", "with", "won't", "would", "wouldn't", "you", "you'd", "you'll",
+      "you're", "you've", "your", "yours", "yourself", "yourselves", "will", "shall", "work", "working",
+      "candidate", "ideal", "experience", "role", "years", "seeking", "looking", "plus", "required", "preferred",
+      "ability", "strong", "skills", "team", "environment", "responsibilities", "requirements", "qualifications",
+      "degree", "bachelor", "master", "equal", "opportunity", "employer", "benefits", "salary", "compensation",
+      "apply", "location", "hybrid", "remote", "full-time", "including", "across", "proven", "track", "record"
+    ]);
+
+    // Sample Datasets for Instant 1-Click Testing
+    const SAMPLES = {
+      fullstack: {
+        resume: `Alex Chen - Senior Software Engineer
+Summary:
+Results-driven Full-Stack Engineer with 5+ years of experience building scalable web applications. Proficient in TypeScript, JavaScript, React, Node.js, and PostgreSQL. Proven track record of improving site speed and reducing latency.
+
+Experience:
+Senior Software Engineer | FinTech Solutions (2022 - Present)
+- Architected and shipped customer-facing dashboard using React, Next.js, and Tailwind CSS, increasing user engagement by 32%.
+- Developed REST APIs and microservices utilizing Node.js, Express, and PostgreSQL with Prisma ORM.
+- Implemented state management using Redux Toolkit and modernized component architecture.
+- Conducted regular code reviews and mentored 4 junior and mid-level engineers.
+- Set up unit testing and integration testing using Jest and Cypress, achieving 88% test coverage.
+
+Software Engineer | Alpha Interactive (2019 - 2022)
+- Built responsive user interfaces using HTML5, CSS3, JavaScript (ES6+), and React.
+- Collaborated in Agile Scrum sprints with cross-functional product and design teams.
+- Optimized SQL database queries in MySQL, slashing average query response times by 40%.
+- Used Git and GitHub for version control and pull request workflows.`,
+
+        job: `Senior Full-Stack & Platform Engineer - Cloud Platform Team
+About the Role:
+We are seeking an experienced Senior Full-Stack & Platform Engineer to design, build, and scale resilient microservices and modern distributed systems.
+
+Key Responsibilities:
+- Design, build, and maintain high-throughput web applications using React, TypeScript, and Node.js.
+- Architect containerized microservices deployed via Docker and Kubernetes (K8s) on AWS (Amazon Web Services).
+- Implement distributed caching and message brokers using Redis and Kafka to process millions of real-time transactions.
+- Champion Infrastructure as Code (IaC) using Terraform and automated CI/CD pipelines via GitHub Actions.
+- Build and maintain both GraphQL and RESTful APIs with strict security standards (OAuth 2.0, JWT).
+- Drive System Design discussions, conduct thorough code reviews, and optimize database scalability using PostgreSQL.
+
+Qualifications & Requirements:
+- 5+ years of software development experience with React, Node.js, and TypeScript.
+- Strong hands-on experience with AWS, Docker, Kubernetes, and Terraform.
+- Demonstrated experience with Redis caching and Kafka data streaming.
+- Deep understanding of GraphQL, REST APIs, Microservices, and System Design.
+- Expertise in CI/CD pipelines, Test-Driven Development (TDD), and performance optimization.`
+      },
+
+      cloud: {
+        resume: `Jordan Taylor - DevOps & Infrastructure Specialist
+Experience Summary:
+DevOps Engineer with 4 years of experience managing Linux infrastructure, Docker containers, and CI/CD pipelines. Familiar with Python, Bash scripting, Git, and automated deployments.
+
+Work History:
+DevOps Engineer | CloudGrid Systems (2021 - Present)
+- Maintained Docker container fleets across staging and production Linux environments.
+- Wrote automation scripts in Python and Bash to streamline server provisioning.
+- Built automated build and test pipelines with Jenkins and GitHub Actions.
+- Monitored system uptime and resource utilization using Prometheus and Grafana.`,
+
+        job: `Staff Site Reliability & Cloud Infrastructure Architect
+Requirements:
+- Deep expertise in AWS cloud services (EKS, ECS, Lambda, IAM, VPC, CloudFormation).
+- Production experience with Kubernetes (K8s), Helm charts, and service mesh architectures.
+- Advanced Infrastructure as Code using Terraform and Ansible.
+- Strong background with distributed logging, Prometheus, Grafana, and incident response.
+- Proficient with Python or Go/Golang for systems engineering and automation.
+- Knowledge of Microservices architecture, Docker, CI/CD, and SOC2 compliance.`
+      },
+
+      data: {
+        resume: `Taylor Rivera - Data Analyst & BI Developer
+Summary:
+Data Analyst with 3 years of experience in data visualization, SQL queries, Excel, and Python data manipulation using Pandas and NumPy.
+
+Experience:
+- Formulated SQL queries across PostgreSQL and MySQL databases to pull business reports.
+- Built interactive Tableau and PowerBI dashboards tracking weekly active users and revenue.
+- Cleaned and prepared tabular datasets with Python, Pandas, and Jupyter Notebooks.`,
+
+        job: `Senior Machine Learning & Data Infrastructure Engineer
+Responsibilities:
+- Build and scale production Machine Learning pipelines and Deep Learning models using PyTorch and TensorFlow.
+- Design real-time data streaming architectures with Kafka, Apache Spark, and Airflow.
+- Deploy ML models as high-performance REST APIs and microservices using FastAPI, Docker, and Kubernetes.
+- Experience with BigQuery or Snowflake for large-scale analytical data warehousing.
+- Strong programming skills in Python, SQL, and data pipelines (ETL).`
+      }
+    };
+
+    // --- DOM ELEMENT REFERENCES ---
+    const resumeInput = document.getElementById('resumeInput');
+    const jobInput = document.getElementById('jobInput');
+    const resumeWordCount = document.getElementById('resumeWordCount');
+    const resumeCharCount = document.getElementById('resumeCharCount');
+    const jobWordCount = document.getElementById('jobWordCount');
+    const jobCharCount = document.getElementById('jobCharCount');
+    const btnClearResume = document.getElementById('btnClearResume');
+    const btnClearJob = document.getElementById('btnClearJob');
+    const btnAnalyze = document.getElementById('btnAnalyze');
+    const btnAnalyzeLabel = document.getElementById('btnAnalyzeLabel');
+    const btnAnalyzeSpinner = document.getElementById('btnAnalyzeSpinner');
+    const inputValidationAlert = document.getElementById('inputValidationAlert');
+
+    const emptyStatePanel = document.getElementById('emptyStatePanel');
+    const resultsPanel = document.getElementById('resultsPanel');
+
+    // Score & Gauge elements
+    const gaugeCircle = document.getElementById('gaugeCircle');
+    const scorePercentText = document.getElementById('scorePercentText');
+    const verdictBadge = document.getElementById('verdictBadge');
+    const verdictTitle = document.getElementById('verdictTitle');
+    const verdictDescription = document.getElementById('verdictDescription');
+    const detectedKeywordsCountBadge = document.getElementById('detectedKeywordsCountBadge');
+
+    // Stat counts
+    const statMatchedCount = document.getElementById('statMatchedCount');
+    const statCriticalCount = document.getElementById('statCriticalCount');
+    const statRecommendedCount = document.getElementById('statRecommendedCount');
+
+    // Badges containers & tabs
+    const criticalSkillsContainer = document.getElementById('criticalSkillsContainer');
+    const recommendedSkillsContainer = document.getElementById('recommendedSkillsContainer');
+    const matchedSkillsContainer = document.getElementById('matchedSkillsContainer');
+    const sectionCriticalSkills = document.getElementById('sectionCriticalSkills');
+    const sectionRecommendedSkills = document.getElementById('sectionRecommendedSkills');
+    const sectionMatchedSkills = document.getElementById('sectionMatchedSkills');
+
+    const tabFilterAll = document.getElementById('tabFilterAll');
+    const tabFilterCritical = document.getElementById('tabFilterCritical');
+    const tabFilterRecommended = document.getElementById('tabFilterRecommended');
+    const tabFilterMatched = document.getElementById('tabFilterMatched');
+    const countTabAll = document.getElementById('countTabAll');
+    const countTabCritical = document.getElementById('countTabCritical');
+    const countTabRecommended = document.getElementById('countTabRecommended');
+    const countTabMatched = document.getElementById('countTabMatched');
+
+    // Bullets container
+    const bulletsContainer = document.getElementById('bulletsContainer');
+    const btnRegenerateBullets = document.getElementById('btnRegenerateBullets');
+    const btnCopyAllBullets = document.getElementById('btnCopyAllBullets');
+    const btnCopyReport = document.getElementById('btnCopyReport');
+
+    // Sample buttons
+    const btnSampleDev = document.getElementById('btnSampleDev');
+    const btnSampleCloud = document.getElementById('btnSampleCloud');
+    const btnSampleData = document.getElementById('btnSampleData');
+    const btnSampleDevMobile = document.getElementById('btnSampleDevMobile');
+    const btnSampleCloudMobile = document.getElementById('btnSampleCloudMobile');
+    const btnSampleDataMobile = document.getElementById('btnSampleDataMobile');
+    const btnEmptySampleDev = document.getElementById('btnEmptySampleDev');
+    const btnResetAll = document.getElementById('btnResetAll');
+
+    // Active state cache for filtering and bullet regeneration
+    let currentAnalysis = null;
+    let bulletVariationIndex = 0;
+
+    // --- UTILITY: WORD & CHAR COUNTERS ---
+    function updateCounters() {
+      const rText = resumeInput.value.trim();
+      const jText = jobInput.value.trim();
+
+      const rWords = rText ? rText.split(/\s+/).length : 0;
+      const jWords = jText ? jText.split(/\s+/).length : 0;
+
+      resumeWordCount.textContent = `${rWords} words`;
+      resumeCharCount.textContent = `${resumeInput.value.length} chars`;
+      jobWordCount.textContent = `${jWords} words`;
+      jobCharCount.textContent = `${jobInput.value.length} chars`;
+
+      btnClearResume.classList.toggle('hidden', resumeInput.value.length === 0);
+      btnClearJob.classList.toggle('hidden', jobInput.value.length === 0);
+    }
+
+    resumeInput.addEventListener('input', updateCounters);
+    jobInput.addEventListener('input', updateCounters);
+
+    btnClearResume.addEventListener('click', () => {
+      resumeInput.value = '';
+      updateCounters();
+      resumeInput.focus();
+    });
+
+    btnClearJob.addEventListener('click', () => {
+      jobInput.value = '';
+      updateCounters();
+      jobInput.focus();
+    });
+
+    btnResetAll.addEventListener('click', () => {
+      resumeInput.value = '';
+      jobInput.value = '';
+      updateCounters();
+      emptyStatePanel.classList.remove('hidden');
+      resultsPanel.classList.add('hidden');
+      currentAnalysis = null;
+      showToast('All inputs and analyses cleared.');
+    });
+
+    // Sample loader helper
+    function loadSample(key) {
+      if (SAMPLES[key]) {
+        resumeInput.value = SAMPLES[key].resume;
+        jobInput.value = SAMPLES[key].job;
+        updateCounters();
+        inputValidationAlert.classList.add('hidden');
+        showToast(`Loaded ${key === 'fullstack' ? 'Full-Stack' : key === 'cloud' ? 'Cloud & DevOps' : 'Data & AI'} sample!`);
+        analyze();
+      }
+    }
+
+    btnSampleDev?.addEventListener('click', () => loadSample('fullstack'));
+    btnSampleCloud?.addEventListener('click', () => loadSample('cloud'));
+    btnSampleData?.addEventListener('click', () => loadSample('data'));
+    btnSampleDevMobile?.addEventListener('click', () => loadSample('fullstack'));
+    btnSampleCloudMobile?.addEventListener('click', () => loadSample('cloud'));
+    btnSampleDataMobile?.addEventListener('click', () => loadSample('data'));
+    btnEmptySampleDev?.addEventListener('click', () => loadSample('fullstack'));
+
+    // --- TOAST NOTIFICATION COMPONENT ---
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = 'pointer-events-auto bg-slate-900 text-white text-xs font-medium px-4 py-2.5 rounded-xl shadow-xl flex items-center gap-2 border border-slate-700 animate-slide-up transition-all duration-300';
+      
+      const icon = type === 'success' ? 
+        `<svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>` :
+        `<svg class="w-4 h-4 text-indigo-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>`;
+      
+      toast.innerHTML = `${icon}<span>${message}</span>`;
+      const container = document.getElementById('toastContainer');
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 2800);
+    }
+
+    // --- CORE LOGIC: KEYWORD EXTRACTION & CROSS-REFERENCING ---
+    function normalizeTerm(term) {
+      return term.toLowerCase().trim().replace(/[.,/#!$%^&*;:{}=\-_`~()]/g, '');
+    }
+
+    function checkContainsKeyword(text, keyword) {
+      // Regex boundary matching that handles special tech tokens like C++, .NET, Node.js, CI/CD
+      const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // If keyword starts or ends with non-word character (e.g. C++, .NET), simple boundary checks can fail
+      const pattern = new RegExp(`(^|\\s|[^a-zA-Z0-9])${escaped}($|\\s|[^a-zA-Z0-9])`, 'i');
+      return pattern.test(text);
+    }
+
+    function extractKeywordsFromJobDescription(jdText) {
+      const foundSkillsMap = new Map();
+
+      // 1. Scan known curated skills dictionary
+      KNOWN_SKILLS_DICTIONARY.forEach(skill => {
+        if (checkContainsKeyword(jdText, skill)) {
+          // Count occurrences to judge weight
+          const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const matches = jdText.match(new RegExp(`(^|\\s|[^a-zA-Z0-9])${escaped}($|\\s|[^a-zA-Z0-9])`, 'gi')) || [];
+          foundSkillsMap.set(skill, matches.length);
+        }
+      });
+
+      // 2. Scan text for capitalized multi-word phrases or technical acronyms (e.g. "OAuth 2.0", "IaC", "TDD")
+      const words = jdText.split(/[\s,;:()[\]{}"'`]+/);
+      const frequency = {};
+
+      for (let i = 0; i < words.length; i++) {
+        const clean = words[i].replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '');
+        const lower = clean.toLowerCase();
+        
+        if (clean.length > 2 && !STOP_WORDS.has(lower) && !/^\d+$/.test(clean)) {
+          // Check if capitalized or uppercase acronym like AWS, SQL, REST, SDK, API
+          if (/^[A-Z][a-z0-9]+/.test(clean) || /^[A-Z]{2,6}$/.test(clean)) {
+            frequency[clean] = (frequency[clean] || 0) + 1;
+          }
+        }
+      }
+
+      // Add high-frequency capitalized domain tokens if they appear at least twice and aren't already captured
+      Object.entries(frequency).forEach(([term, count]) => {
+        if (count >= 2) {
+          const alreadyCovered = Array.from(foundSkillsMap.keys()).some(k => k.toLowerCase() === term.toLowerCase());
+          if (!alreadyCovered && !STOP_WORDS.has(term.toLowerCase())) {
+            foundSkillsMap.set(term, count);
+          }
+        }
+      });
+
+      return foundSkillsMap;
+    }
+
+    function auditResumeMatch(resumeText, jdText) {
+      const jdKeywordsMap = extractKeywordsFromJobDescription(jdText);
+      const detectedKeywords = Array.from(jdKeywordsMap.entries());
+
+      // If very few keywords matched from dictionaries, fallback to meaningful unique terms
+      if (detectedKeywords.length < 5) {
+        const words = jdText.split(/[\s,;:()[\]{}"'`]+/);
+        words.forEach(w => {
+          const clean = w.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '');
+          const lower = clean.toLowerCase();
+          if (clean.length >= 4 && !STOP_WORDS.has(lower) && !foundSkillsMapHas(jdKeywordsMap, clean)) {
+            jdKeywordsMap.set(clean, 1);
+          }
+        });
+      }
+
+      const matched = [];
+      const missing = [];
+
+      jdKeywordsMap.forEach((count, keyword) => {
+        if (checkContainsKeyword(resumeText, keyword)) {
+          matched.push({ keyword, count });
+        } else {
+          missing.push({ keyword, count });
+        }
+      });
+
+      // Split missing into Critical vs Recommended based on count/priority
+      // Higher count in JD or top core tech -> Critical
+      missing.sort((a, b) => b.count - a.count);
+
+      const critical = [];
+      const recommended = [];
+
+      missing.forEach((item, index) => {
+        // High count (>=2) or top 40% of missing list
+        if (item.count >= 2 || index < Math.ceil(missing.length * 0.45)) {
+          critical.push(item.keyword);
+        } else {
+          recommended.push(item.keyword);
+        }
+      });
+
+      const matchedKeywords = matched.map(m => m.keyword);
+      const totalKeywordsCount = matchedKeywords.length + missing.length;
+      const score = totalKeywordsCount === 0 ? 0 : Math.round((matchedKeywords.length / totalKeywordsCount) * 100);
+
+      return {
+        score,
+        totalKeywordsCount,
+        matched: matchedKeywords,
+        criticalMissing: critical,
+        recommendedMissing: recommended,
+        allMissing: missing.map(m => m.keyword)
+      };
+    }
+
+    function foundSkillsMapHas(map, term) {
+      const t = term.toLowerCase();
+      for (let k of map.keys()) {
+        if (k.toLowerCase() === t) return true;
+      }
+      return false;
+    }
+
+    // --- TAILORED BULLET POINT GENERATOR ---
+    function generateSmartBullets(analysis, variationOffset = 0) {
+      const missingList = [...analysis.criticalMissing, ...analysis.recommendedMissing];
+      
+      // Fallback skills if candidate matched almost everything
+      const k1 = missingList[0] || (analysis.matched[0] || "Distributed Systems");
+      const k2 = missingList[1] || (analysis.matched[1] || "Cloud Architecture");
+      const k3 = missingList[2] || (analysis.matched[2] || "CI/CD & Automated Testing");
+
+      // Dynamic metrics and templates with 3 variations
+      const bulletTemplates = [
+        // Variation Set 1
+        [
+          {
+            skill: k1,
+            bullet: `Spearheaded migration of legacy services to modern <strong class="text-indigo-600 font-semibold">${k1}</strong> architecture, reducing deployment latency by 34% and cutting cloud infrastructure overhead by $28,000 annually.`,
+            tag: "Performance & Cost Optimization"
+          },
+          {
+            skill: k2,
+            bullet: `Architected and launched end-to-end data integration pipelines utilizing <strong class="text-indigo-600 font-semibold">${k2}</strong>, boosting system transaction throughput by 42% while sustaining 99.98% uptime SLA.`,
+            tag: "Scalability & Reliability"
+          },
+          {
+            skill: k3,
+            bullet: `Standardized engineering best practices and automated testing around <strong class="text-indigo-600 font-semibold">${k3}</strong>, mentoring 6 junior engineers and increasing unit/integration test coverage from 64% to 92%.`,
+            tag: "Quality & Leadership"
+          }
+        ],
+        // Variation Set 2
+        [
+          {
+            skill: k1,
+            bullet: `Engineered high-concurrency microservices leveraging <strong class="text-indigo-600 font-semibold">${k1}</strong> to ingest and process 5M+ daily requests, decreasing p99 server response times from 420ms to 85ms.`,
+            tag: "High-Throughput Engineering"
+          },
+          {
+            skill: k2,
+            bullet: `Implemented automated CI/CD and deployment workflows centered on <strong class="text-indigo-600 font-semibold">${k2}</strong>, shortening release cycle durations by 58% and eliminating rollback incidents.`,
+            tag: "Developer Velocity"
+          },
+          {
+            skill: k3,
+            bullet: `Designed and rolled out enterprise security and compliance protocols with <strong class="text-indigo-600 font-semibold">${k3}</strong>, safeguarding critical customer endpoints against unauthorized payloads.`,
+            tag: "Security & Governance"
+          }
+        ],
+        // Variation Set 3
+        [
+          {
+            skill: k1,
+            bullet: `Partnered with cross-functional product stakeholders to introduce <strong class="text-indigo-600 font-semibold">${k1}</strong> into production, driving a 26% lift in daily platform interactions and customer retention.`,
+            tag: "Product Impact"
+          },
+          {
+            skill: k2,
+            bullet: `Refactored distributed query interfaces with <strong class="text-indigo-600 font-semibold">${k2}</strong>, eliminating database lock bottlenecks and accelerating batch processing jobs by 3.4x.`,
+            tag: "Database & Query Tuning"
+          },
+          {
+            skill: k3,
+            bullet: `Authored comprehensive developer documentation and architectural guides for <strong class="text-indigo-600 font-semibold">${k3}</strong>, shortening new engineering team member onboarding time from 3 weeks to 4 days.`,
+            tag: "Team Enablement"
+          }
+        ]
+      ];
+
+      const setIndex = variationOffset % bulletTemplates.length;
+      return bulletTemplates[setIndex];
+    }
+
+    // --- RENDER FUNCTIONS ---
+    function renderAnalysis(analysis) {
+      currentAnalysis = analysis;
+
+      // Switch views: Hide empty state, Show results panel
+      emptyStatePanel.classList.add('hidden');
+      resultsPanel.classList.remove('hidden');
+
+      // 1. Update Gauge & Score
+      const circumference = 2 * Math.PI * 48; // 301.59
+      const targetOffset = circumference - (analysis.score / 100) * circumference;
+      
+      // Determine color theme based on score
+      let colorClass = '#4f46e5'; // Indigo default
+      let badgeStyle = '';
+      let verdictTitleText = '';
+      let verdictDescText = '';
+
+      if (analysis.score >= 80) {
+        colorClass = '#10b981'; // Emerald
+        badgeStyle = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+        verdictTitleText = 'Excellent Profile Match';
+        verdictDescText = 'Your resume shows exceptional alignment with the core responsibilities and technical qualifications for this role.';
+        verdictBadge.innerHTML = `<svg class="w-3 h-3 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg> Strong Fit`;
+      } else if (analysis.score >= 60) {
+        colorClass = '#6366f1'; // Indigo
+        badgeStyle = 'bg-indigo-50 text-indigo-700 border-indigo-200';
+        verdictTitleText = 'Moderate Fit with Addressable Gaps';
+        verdictDescText = 'You have a solid foundation. Adding the critical missing keywords into your experience bullets will significantly boost ATS screening.';
+        verdictBadge.innerHTML = `<svg class="w-3 h-3 text-indigo-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v3.586L7.707 9.293a1 1 0 00-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 10.586V7z" clip-rule="evenodd"/></svg> Good Alignment`;
+      } else if (analysis.score >= 40) {
+        colorClass = '#f59e0b'; // Amber
+        badgeStyle = 'bg-amber-50 text-amber-700 border-amber-200';
+        verdictTitleText = 'Significant Skill Gaps Detected';
+        verdictDescText = 'Several essential requirements appear absent. Incorporate relevant experience or equivalent competencies before applying.';
+        verdictBadge.innerHTML = `<svg class="w-3 h-3 text-amber-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg> Notable Gaps`;
+      } else {
+        colorClass = '#f43f5e'; // Rose
+        badgeStyle = 'bg-rose-50 text-rose-700 border-rose-200';
+        verdictTitleText = 'Low Direct Match';
+        verdictDescText = 'Substantial misalignment in technical stack or domain qualifications. Submitting without tailored revisions may trigger automated ATS filters.';
+        verdictBadge.innerHTML = `<svg class="w-3 h-3 text-rose-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/></svg> Low Fit`;
+      }
+
+      // Update Gauge SVG
+      gaugeCircle.style.stroke = colorClass;
+      gaugeCircle.style.strokeDashoffset = targetOffset;
+      
+      // Animate score counter
+      animateCounter(scorePercentText, 0, analysis.score, '%');
+
+      verdictBadge.className = `inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${badgeStyle}`;
+      verdictTitle.textContent = verdictTitleText;
+      verdictDescription.textContent = verdictDescText;
+      detectedKeywordsCountBadge.textContent = `${analysis.totalKeywordsCount} role keywords audited`;
+
+      // 2. Stat Counts
+      statMatchedCount.textContent = analysis.matched.length;
+      statCriticalCount.textContent = analysis.criticalMissing.length;
+      statRecommendedCount.textContent = analysis.recommendedMissing.length;
+
+      countTabAll.textContent = analysis.totalKeywordsCount;
+      countTabCritical.textContent = analysis.criticalMissing.length;
+      countTabRecommended.textContent = analysis.recommendedMissing.length;
+      countTabMatched.textContent = analysis.matched.length;
+
+      // 3. Render Badges
+      renderBadges(analysis);
+
+      // 4. Render Bullets
+      renderBullets();
+    }
+
+    function animateCounter(element, start, end, suffix = '') {
+      const duration = 800;
+      const startTime = performance.now();
+
+      function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3); // Ease out cubic
+        const current = Math.round(start + (end - start) * easeProgress);
+        element.textContent = `${current}${suffix}`;
+
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        }
+      }
+      requestAnimationFrame(update);
+    }
+
+    function createBadge(keyword, type) {
+      const badge = document.createElement('div');
+      badge.className = 'inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-semibold transition-all select-all';
+
+      if (type === 'critical') {
+        badge.className += ' bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 hover:border-rose-300';
+        badge.innerHTML = `
+          <svg class="w-3 h-3 text-rose-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+          </svg>
+          <span>${keyword}</span>
+        `;
+      } else if (type === 'recommended') {
+        badge.className += ' bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 hover:border-amber-300';
+        badge.innerHTML = `
+          <svg class="w-3 h-3 text-amber-500 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z" clip-rule="evenodd" />
+          </svg>
+          <span>${keyword}</span>
+        `;
+      } else {
+        badge.className += ' bg-emerald-50 text-emerald-800 border border-emerald-200 hover:bg-emerald-100 hover:border-emerald-300';
+        badge.innerHTML = `
+          <svg class="w-3 h-3 text-emerald-600 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+          </svg>
+          <span>${keyword}</span>
+        `;
+      }
+
+      return badge;
+    }
+
+    function renderBadges(analysis) {
+      // Clear containers
+      criticalSkillsContainer.innerHTML = '';
+      recommendedSkillsContainer.innerHTML = '';
+      matchedSkillsContainer.innerHTML = '';
+
+      if (analysis.criticalMissing.length === 0) {
+        criticalSkillsContainer.innerHTML = `<span class="text-xs text-slate-400 italic">No critical missing skills detected! Outstanding alignment.</span>`;
+      } else {
+        analysis.criticalMissing.forEach(skill => {
+          criticalSkillsContainer.appendChild(createBadge(skill, 'critical'));
+        });
+      }
+
+      if (analysis.recommendedMissing.length === 0) {
+        recommendedSkillsContainer.innerHTML = `<span class="text-xs text-slate-400 italic">No secondary skill gaps detected.</span>`;
+      } else {
+        analysis.recommendedMissing.forEach(skill => {
+          recommendedSkillsContainer.appendChild(createBadge(skill, 'recommended'));
+        });
+      }
+
+      if (analysis.matched.length === 0) {
+        matchedSkillsContainer.innerHTML = `<span class="text-xs text-slate-400 italic">No direct matches identified.</span>`;
+      } else {
+        analysis.matched.forEach(skill => {
+          matchedSkillsContainer.appendChild(createBadge(skill, 'matched'));
+        });
+      }
+    }
+
+    function renderBullets() {
+      if (!currentAnalysis) return;
+      const bullets = generateSmartBullets(currentAnalysis, bulletVariationIndex);
+      bulletsContainer.innerHTML = '';
+
+      bullets.forEach((item, index) => {
+        const bulletCard = document.createElement('div');
+        bulletCard.className = 'group p-3.5 bg-slate-50/70 hover:bg-slate-50 border border-slate-200 rounded-xl transition-all flex flex-col sm:flex-row items-start justify-between gap-3 text-xs';
+        
+        // Strip HTML for plain copy
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = item.bullet;
+        const plainTextBullet = tempDiv.textContent || tempDiv.innerText || '';
+
+        bulletCard.innerHTML = `
+          <div class="space-y-1.5 flex-1">
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                ${item.tag}
+              </span>
+              <span class="text-[11px] text-slate-400 font-medium">Targeting: <strong>${item.skill}</strong></span>
+            </div>
+            <p class="text-slate-700 leading-relaxed font-sans text-xs">
+              &bull; ${item.bullet}
+            </p>
+          </div>
+          <button 
+            type="button" 
+            class="btnCopySingleBullet inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 hover:text-indigo-600 bg-white hover:bg-indigo-50/50 border border-slate-200 hover:border-indigo-200 rounded-lg shadow-2xs transition-all cursor-pointer shrink-0 self-end sm:self-center"
+            data-bullet="${plainTextBullet.replace(/"/g, '&quot;')}"
+          >
+            <svg class="w-3.5 h-3.5 text-slate-400 group-hover:text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            </svg>
+            <span>Copy</span>
+          </button>
+        `;
+
+        bulletsContainer.appendChild(bulletCard);
+      });
+
+      // Attach copy listeners
+      document.querySelectorAll('.btnCopySingleBullet').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const textToCopy = btn.getAttribute('data-bullet');
+          navigator.clipboard.writeText(textToCopy).then(() => {
+            const originalHTML = btn.innerHTML;
+            btn.innerHTML = `
+              <svg class="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+              <span class="text-emerald-700 font-semibold">Copied!</span>
+            `;
+            showToast('Bullet point copied to clipboard!', 'success');
+            setTimeout(() => {
+              btn.innerHTML = originalHTML;
+            }, 1800);
+          });
+        });
+      });
+    }
+
+    // Bullet variation regenerator
+    btnRegenerateBullets.addEventListener('click', () => {
+      bulletVariationIndex++;
+      renderBullets();
+      showToast('Generated fresh bullet suggestions!');
+    });
+
+    btnCopyAllBullets.addEventListener('click', () => {
+      if (!currentAnalysis) return;
+      const bullets = generateSmartBullets(currentAnalysis, bulletVariationIndex);
+      const fullText = bullets.map(b => {
+        const d = document.createElement('div');
+        d.innerHTML = b.bullet;
+        return `• ${d.textContent || d.innerText}`;
+      }).join('\n\n');
+
+      navigator.clipboard.writeText(fullText).then(() => {
+        showToast('All 3 bullet points copied to clipboard!', 'success');
+      });
+    });
+
+    // Copy full audit report
+    btnCopyReport.addEventListener('click', () => {
+      if (!currentAnalysis) return;
+      const report = [
+        `=== THE SKILL-GAP ANALYZER REPORT ===`,
+        `Match Score: ${currentAnalysis.score}%`,
+        `Total Role Keywords Audited: ${currentAnalysis.totalKeywordsCount}`,
+        `Matched Skills (${currentAnalysis.matched.length}): ${currentAnalysis.matched.join(', ') || 'None'}`,
+        `Critical Missing Gaps (${currentAnalysis.criticalMissing.length}): ${currentAnalysis.criticalMissing.join(', ') || 'None'}`,
+        `Recommended Missing Skills (${currentAnalysis.recommendedMissing.length}): ${currentAnalysis.recommendedMissing.join(', ') || 'None'}`,
+        ``,
+        `=== RECOMMENDED ACTION BULLETS ===`,
+        generateSmartBullets(currentAnalysis, bulletVariationIndex).map(b => {
+          const d = document.createElement('div');
+          d.innerHTML = b.bullet;
+          return `• ${d.textContent || d.innerText}`;
+        }).join('\n')
+      ].join('\n');
+
+      navigator.clipboard.writeText(report).then(() => {
+        showToast('Full Gap Audit Report copied to clipboard!', 'success');
+      });
+    });
+
+    // --- TAB FILTERING LOGIC ---
+    function setBadgeTabFilter(activeTab) {
+      const tabs = [
+        { el: tabFilterAll, name: 'all' },
+        { el: tabFilterCritical, name: 'critical' },
+        { el: tabFilterRecommended, name: 'recommended' },
+        { el: tabFilterMatched, name: 'matched' }
+      ];
+
+      tabs.forEach(t => {
+        if (t.name === activeTab) {
+          t.el.className = 'px-2.5 py-1 rounded-md bg-white shadow-xs text-indigo-700 transition-all font-bold';
+        } else {
+          t.el.className = 'px-2.5 py-1 rounded-md hover:text-slate-900 transition-all text-slate-600 font-medium';
+        }
+      });
+
+      if (activeTab === 'all') {
+        sectionCriticalSkills.classList.remove('hidden');
+        sectionRecommendedSkills.classList.remove('hidden');
+        sectionMatchedSkills.classList.remove('hidden');
+      } else if (activeTab === 'critical') {
+        sectionCriticalSkills.classList.remove('hidden');
+        sectionRecommendedSkills.classList.add('hidden');
+        sectionMatchedSkills.classList.add('hidden');
+      } else if (activeTab === 'recommended') {
+        sectionCriticalSkills.classList.add('hidden');
+        sectionRecommendedSkills.classList.remove('hidden');
+        sectionMatchedSkills.classList.add('hidden');
+      } else if (activeTab === 'matched') {
+        sectionCriticalSkills.classList.add('hidden');
+        sectionRecommendedSkills.classList.add('hidden');
+        sectionMatchedSkills.classList.remove('hidden');
+      }
+    }
+
+    tabFilterAll.addEventListener('click', () => setBadgeTabFilter('all'));
+    tabFilterCritical.addEventListener('click', () => setBadgeTabFilter('critical'));
+    tabFilterRecommended.addEventListener('click', () => setBadgeTabFilter('recommended'));
+    tabFilterMatched.addEventListener('click', () => setBadgeTabFilter('matched'));
+
+    // --- ANALYZE ACTION HANDLER ---
+    function analyze() {
+      const resume = resumeInput.value.trim();
+      const job = jobInput.value.trim();
+
+      if (!resume || !job) {
+        inputValidationAlert.classList.remove('hidden');
+        showToast('Please provide both resume text and job description.', 'info');
+        return;
+      }
+      inputValidationAlert.classList.add('hidden');
+
+      // Enter loading state
+      btnAnalyze.disabled = true;
+      btnAnalyzeLabel.classList.add('hidden');
+      btnAnalyzeSpinner.classList.remove('hidden');
+
+      // Simulate realistic AI parsing processing delay (650ms)
+      setTimeout(() => {
+        const results = auditResumeMatch(resume, job);
+        renderAnalysis(results);
+
+        // Reset button state
+        btnAnalyze.disabled = false;
+        btnAnalyzeLabel.classList.remove('hidden');
+        btnAnalyzeSpinner.classList.add('hidden');
+
+        // Scroll to results on mobile devices if needed
+        if (window.innerWidth < 1024) {
+          resultsPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        showToast(`Audit complete: ${results.score}% match score identified!`, 'success');
+      }, 650);
+    }
+
+    btnAnalyze.addEventListener('click', analyze);
+
+    // Initial counter setup on page load
+    updateCounters();
+  </script>
+</body>
+</html>

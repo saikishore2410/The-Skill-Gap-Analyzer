@@ -1,0 +1,6 @@
+{
+  "name": "The Skill-Gap Analyzer",
+  "description": "Audit your resume against job descriptions with intelligent keyword gap analysis, match scoring, and tailored bullet point suggestions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
