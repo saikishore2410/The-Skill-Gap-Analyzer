@@ -11,10 +11,12 @@
     "test": "node scripts/smoke-test.mjs"
   },
   "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
     "vite": "^8.3.0"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "tailwindcss": "^4.3.3",
     "typescript": "^7.0.2"
   }
 }
