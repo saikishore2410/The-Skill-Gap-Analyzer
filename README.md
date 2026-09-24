@@ -16,7 +16,7 @@ A client-side resume and job-description skill-gap analyzer.
 - HTML5
 - JavaScript
 - Vite
-- Tailwind CSS via the existing browser-delivered UI
+- Tailwind CSS
 
 ## Local development
 
@@ -41,7 +41,7 @@ The production files are generated in `dist/`.
 
 ## Deployment
 
-GitHub Actions validates the application on pushes and pull requests. A separate GitHub Pages workflow builds and deploys the `dist/` artifact on pushes to `main` when GitHub Pages is configured to use GitHub Actions.
+GitHub Actions runs the smoke test, TypeScript validation, and production build on pushes and pull requests. A separate GitHub Pages workflow repeats the smoke test and build, then deploys the `dist/` artifact when GitHub Pages is configured to use GitHub Actions.
 
 ## Security note
 
