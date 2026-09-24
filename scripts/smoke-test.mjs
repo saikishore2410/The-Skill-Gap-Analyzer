@@ -1,8 +1,9 @@
 import { readFile } from 'node:fs/promises';
 
 const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+const css = await readFile(new URL('../src/styles.css', import.meta.url), 'utf8');
 
-const required = [
+const requiredHtml = [
   '<!DOCTYPE html>',
   '<title>The Skill-Gap Analyzer</title>',
   'id="resumeInput"',
@@ -10,14 +11,17 @@ const required = [
   'id="btnAnalyze"',
   'auditResumeMatch',
   '<link rel="stylesheet" href="./src/styles.css">',
-  '@import "tailwindcss";',
   '</html>',
 ];
 
-for (const marker of required) {
+for (const marker of requiredHtml) {
   if (!html.includes(marker)) {
-    throw new Error(`Missing required application marker: ${marker}`);
+    throw new Error(`Missing required HTML marker: ${marker}`);
   }
+}
+
+if (!css.includes('@import "tailwindcss";')) {
+  throw new Error('Tailwind CSS import is missing from src/styles.css.');
 }
 
 if (html.includes('https://cdn.tailwindcss.com') || html.includes('tailwind.config')) {
