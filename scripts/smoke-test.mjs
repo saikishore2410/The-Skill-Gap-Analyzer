@@ -9,6 +9,7 @@ const required = [
   'id="jobInput"',
   'id="btnAnalyze"',
   'auditResumeMatch',
+  '<link rel="stylesheet" href="./src/styles.css">',
   '</html>',
 ];
 
@@ -16,6 +17,10 @@ for (const marker of required) {
   if (!html.includes(marker)) {
     throw new Error(`Missing required application marker: ${marker}`);
   }
+}
+
+if (html.includes('https://cdn.tailwindcss.com')) {
+  throw new Error('Production HTML must not depend on the Tailwind CDN.');
 }
 
 if (html.includes('GEMINI_API_KEY')) {
